@@ -1,0 +1,125 @@
+;playfield sync
+    processor 6502
+    
+    include vcs.h
+    include macro.h
+    
+    seg Code ; Define a new segment named "Code"
+    org $F000 ; Define the origin of the ROM code at memory address $F000
+
+Start:
+
+    CLEAN_START ; clean memory
+
+    ldx #$80 ;load the blue colour for the background
+    stx COLUBK ;load the blue in memory 
+
+    lda #$1D ;load the colour for the playfield yellow
+    sta COLUPF
+
+
+NextFrame:
+    lda #2
+    sta VBLANK ;poke 2 in video memory
+    sta VSYNC ; turn on the vertical synch VERTICAL SYNC
+
+    ; generate the 3 lines of the WSYNC weight sync
+
+    REPEAT 3
+        sta WSYNC ; first line of WSYNC weight sync
+    REPEND
+    lda #0
+    sta VSYNC ; turn off VSYNC
+
+    ; generates the 37 recommended scan lines for the NTSC TV
+
+    REPEAT 37
+        sta WSYNC
+    REPEND
+    lda #0
+    sta VBLANK ;turn off vblank
+
+    ;;;;;;;;;;;;PLAYFIELD;;;;;;;;;;;;
+    ;set the the playfield to be reflected CTRLPF.
+    LDX #%00000001 ;this set the platfield to reflect the pattern
+    STX CTRLPF
+
+    ;;;;;;;; draw the 192  visible scan lines for the game;;;;;;;;
+    
+    ; draw the first 7 empty  scan lines
+    
+    ldx #%0
+    stx PF0 ;playfield 1 4 bits
+    stx PF1 ;playfield 2 8 bits
+    stx PF1 ;playfield 3 8 bits
+    
+    REPEAT 7
+        sta WSYNC ;wait for the scan line
+    REPEND
+    
+    ;set PF0 to 1000, PF1 11111111, PF2 11111111
+    
+        ;set PF0 to 1000, PF1 11111111, PF2 11111111
+    ldx #%011100000
+    stx PF0
+    ldx #%11111111
+    stx PF1
+    stx PF2
+    REPEAT 7
+    	STA WSYNC
+    REPEND
+    
+    
+    ; 164 scan lines with the border
+    ldx #%000100000
+    stx PF0
+    ldx #0
+    stx PF1
+    stx PF2
+    REPEAT 164
+    	STA WSYNC
+    REPEND
+    
+    ;bottom 
+    
+    ldx #%011100000
+    stx PF0  
+    ldx #%11111111
+    stx PF1
+    ldx #%11111111
+    stx PF2
+    REPEAT 7
+    	STA WSYNC
+    REPEND
+
+    ;;;;;;;;draw the bottom 7 lines
+    
+    ldx #%0
+    stx PF0 ;playfield 1 4 bits
+    stx PF1 ;playfield 2 8 bits
+    stx PF2 ;playfield 3 8 bits
+    REPEAT 7
+        sta WSYNC ;wait for the scan line
+    REPEND
+
+; OVERSCAN generates the 37 recommended scan lines for the NTSC TV
+
+    REPEAT 30
+        sta WSYNC
+    REPEND
+    lda #0
+    sta VBLANK ;turn off vblank
+
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+    jmp NextFrame
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;complete the rom
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    org $FFFC ; End the ROM always at position $FFFC
+    .word Start ; Put 2 bytes with reset address at memory position $FFFC
+    .word Start ; Put 2 bytes with break address at memory position $FFFE
