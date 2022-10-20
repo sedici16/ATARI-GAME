@@ -2,6 +2,13 @@
     
     include vcs.h
     include macro.h
+
+    ;;;;;initialise memory declaration for variable
+
+    seg.u Variables
+    org $80
+P0Height    ds 1; define one byte for player 0 height
+P1Height    ds 1; define one byte for player 0 height
     
     seg CODE; Define a new segment named "Code"
     org $F000 ; Define the origin of the ROM code at memory address $F000
@@ -18,6 +25,12 @@ Reset:
 
     lda #%1111 ;load the colour for the playfield white
     sta COLUPF
+
+    ;;;;;height of the players
+
+    lda #10
+    sta P0Height ; player height set to 10 e.g. A=10
+    sta P1Height
     
     ;;;;colours of the players
     
@@ -99,13 +112,11 @@ Player0Loop:
     sta GRP0;set the player zero in field
     sta WSYNC
     iny;increment ++1
-    cpy #10 ;compare y with 10
+    cpy P0Height ;compare y with 10
     bne Player0Loop
     
     lda #0
     sta GRP0; disable player 0 graphics 
-    
-
     
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,7 +130,7 @@ Player1Loop:
     sta GRP1;set the player zero in field
     sta WSYNC
     iny;increment ++1
-    cpy #10 ;compare y with 10
+    cpy P1Height ;compare y with 10
     bne Player1Loop
     
     lda #0
