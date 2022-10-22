@@ -1,0 +1,158 @@
+    processor 6502
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Include required files with register mapping and macros
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    include "vcs.h"
+    include "macro.h"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Start an uninitialized segment at $80 for var declaration.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    seg.u Variables
+    org $80
+P0Height .byte     ; defines one byte for player 0 height
+playerpos .byte     ; defines one byte for player 1 height
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Start our ROM code segment starting at $F000.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    seg Code
+    org $F000
+
+Reset:
+    CLEAN_START    ; macro to clean memory and TIA
+
+    ldx #$0       ; black background color
+    stx COLUBK
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Initialize P0Height and player position
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    lda #11     ; A = 9
+    sta P0Height   ; P0Height = A
+    lda #90
+    sta playerpos   ;player position
+    
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Start a new frame by configuring VBLANK and VSYNC
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+StartFrame:
+    lda #2
+    sta VBLANK     ; turn VBLANK on
+    sta VSYNC      ; turn VSYNC on
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    REPEAT 3
+        sta WSYNC  ; first three VSYNC scanlines
+    REPEND
+
+    lda #0
+    sta VSYNC      ; turn VSYNC off
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Let the TIA output the 37 recommended lines of VBLANK
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    REPEAT 37
+        sta WSYNC
+    REPEND
+
+    lda #0
+    sta VBLANK     ; turn VBLANK off
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Draw the 192 visible scanlines
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;counter with the remaining scan lines
+
+	ldx #192
+
+Scanline:
+	txa;transfer x to a
+
+	sec;carry flag is set for subtration
+
+	sbc playerpos;subtract scan line A from player position
+
+	cmp P0Height;compare with the player height 
+	;bcc branch if carry is cleared, In subtraction, when the carry is cleared it means that the answer is a negative number.
+	bcc Loadbitmap;if result < playerheight call subroutine for drawing the player bitmap, in other words the number is negative
+
+	lda #0;else load LDA with zero
+
+Loadbitmap:
+
+	tay; transfer a to y, a has the differrence 9,8,7,6 and so on
+	lda PlayerBitmap,y; load playyer bitmap slice 
+	sta GRP0; store the graphic in player GRP0
+;load the colour code for the player
+;store the colour in COLUP0
+	
+        lda Player0Colour,y       ; player 0 color light red
+    	sta COLUP0; store the colours in player 1
+
+	sta WSYNC ;wait for scan line
+        dex; decrement scan line
+        bne Scanline; repeat for next scan line until finished
+        
+        
+        
+        
+  	
+  	
+;;overcan 30 lines
+        
+	REPEAT 30
+        sta WSYNC
+    	REPEND
+        
+        Dec playerpos 
+       
+        jmp StartFrame
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; player bitmap
+;; We add these bytes in the last ROM addresses.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;org $FFE8
+PlayerBitmap:
+	.byte $00 ; |   XX   |
+	.byte $18 ; |   XX   |
+	.byte $7E ; | XXXXXX |
+	.byte $7F ; | XXXXXXX|
+	.byte $7F ; | XXXXXXX|
+	.byte $FF ; |XXXXXXXX|
+	.byte $FE ; |XXXXXXX |
+	.byte $7E ; | XXXXXX |
+	.byte $18 ; |   XX   |
+	.byte $08 ; |    X   |
+	.byte $10 ; |   X    |
+	.byte $10 ; |   X    |
+
+Player0Colour:
+	byte $00
+        byte $40
+        byte $40
+        byte $40
+        byte $42
+        byte $42
+        byte $42
+        byte $D2
+        byte $D2
+        byte $D2
+        byte $D2
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Complete ROM size
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    org $FFFC
+    .word Reset
+    .word Reset
