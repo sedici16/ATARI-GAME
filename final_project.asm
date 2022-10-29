@@ -95,6 +95,7 @@ StartFrame:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; X position calculation before vblank
+;Y is the object type 0 player, 1 Bomber. A is the position
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	
     lda P0Xpos ;set player x pos
@@ -168,7 +169,6 @@ StartFrame:
 	lda (jetspriteptr),y; load playyer bitmap slice 
         
        
-        
 	sta GRP0; store the graphic in player GRP0
 	;load the colour code for the player
 	;store the colour in COLUP0
@@ -228,7 +228,36 @@ StartFrame:
     sta VBLANK ;turn off vblank
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;joystick controls
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
+CheckP0up:
+
+	lda #%00010000 ;joystick up
+        bit SWCHA
+        bne CheckP0down; if the pattern does not match bypass
+        inc P0ypos
+
+CheckP0down:
+
+        lda #%00100000 ;joystick down
+        bit SWCHA
+        bne CheckP0left
+        dec P0ypos
+
+CheckP0left:
+	lda #%01000000 ;joystick left
+        bit SWCHA
+        bne CheckP0right
+        dec P0Xpos
+
+CheckP0right:
+	lda #%10000000 ;joystick down
+        bit SWCHA
+        bne noaction
+        inc P0Xpos
+        
+noaction:
     
     jmp StartFrame
     
@@ -251,8 +280,8 @@ DivideLoop:
         asl 
         asl ;bit shift as HMP0 use only four bits
         
-        sta HMP0,y ; set fine positioning 
-        sta RESP0,y; reset 15 brute posinition
+        sta HMP0,y ; set fine positioning Y is the object type 0 player, 1 Bomber
+        sta RESP0,y; reset 15 brute posinition Y is the object type 0 player, 1 Bomber
         rts
 
         
