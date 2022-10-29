@@ -47,11 +47,11 @@ Reset:
 ;; initialise ram variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	lda #60
+	lda #79
         sta P0Xpos
         lda #10
         sta P0ypos
-        lda #54
+        lda #40
         sta BomberXpos
         lda #83
         sta Bomberypos
@@ -85,9 +85,7 @@ Reset:
         sta bombercolourptr+1
         
         
-        
-        
-        
+       
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; start main game loop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,6 +93,22 @@ Reset:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 StartFrame:
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; X position calculation before vblank
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	
+    lda P0Xpos ;set player x pos
+    ldy #0; load object 1
+    jsr SetObjectSubRoutine;call subroutine
+    lda BomberXpos
+    ldy #1
+    jsr SetObjectSubRoutine
+    
+    lda WSYNC
+    lda HMOVE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;vblank
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     lda #2
     sta VBLANK     ; turn VBLANK on
@@ -107,6 +121,7 @@ StartFrame:
 
     lda #0
     sta VSYNC      ; turn VSYNC off
+    
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Let the TIA output the 35 recommended lines of VBLANK
@@ -137,7 +152,7 @@ StartFrame:
         
 ;loop for the visible scan lines
 
-	ldx #91
+	ldx #91;  I have 2 wsync in the sprite rendering so half of the lines
         
 .visiblelines:
 
@@ -151,11 +166,14 @@ StartFrame:
 .drawsprite0:
 	tay; transfer a to y, a has the differrence 9,8,7,6 and so on
 	lda (jetspriteptr),y; load playyer bitmap slice 
-        sta WSYNC; wait for the scanline
+        
+       
         
 	sta GRP0; store the graphic in player GRP0
-;load the colour code for the player
-;store the colour in COLUP0
+	;load the colour code for the player
+	;store the colour in COLUP0
+        
+         sta WSYNC; wait for the scanline
 	
         lda jetcolourptr,y       ; player 0 color light red
     	sta COLUP0; store the colours in player 1
@@ -176,12 +194,19 @@ StartFrame:
 
 .drawbomber0:
 	tay; transfer a to y, a has the differrence 9,8,7,6 and so on
-	lda (bomberspriteptr),y; load playyer bitmap slice 
-        sta WSYNC; wait for the scanline
+	
+        lda #%000000101;double the width of the sprite
+        sta NUSIZ1
+        
+        
+        
+        lda (bomberspriteptr),y; load playyer bitmap slice 
+
         
 	sta GRP1; store the graphic in player GRP0
-;load the colour code for the player
-;store the colour in COLUP0
+	;load the colour code for the player
+	;store the colour in COLUP0
+        sta WSYNC; wait for the scanline
 	
         lda bombercolourptr,y       ; player 0 color light red
     	sta COLUP1; store the colours in player 1
@@ -207,28 +232,66 @@ StartFrame:
     
     jmp StartFrame
     
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;x pos subroutine
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+SetObjectSubRoutine subroutine
+	sta WSYNC
+        sec
+DivideLoop:
+	sbc #15 ;subtract 15 from accumulator 
+        bcs DivideLoop; loop while carry flag is still set
+        ;the accumulator will contain the remainder of the division
+        
+        eor #%00000111 ; this is 7; xor the result to obtain a value between -8 and 7
+        
+        asl
+        asl 
+        asl 
+        asl ;bit shift as HMP0 use only four bits
+        
+        sta HMP0,y ; set fine positioning 
+        sta RESP0,y; reset 15 brute posinition
+        rts
+
+        
+
+
+
+
+
+    
 ;---Graphics Data for the jet sprite ---
 
+
+        
 jet_Frame0
 	.byte #%00000000;
-        .byte #%00010000;$1E
-        .byte #%00010000;$40
-        .byte #%00010000;$40
-        .byte #%00111000;$1A
-        .byte #%00111000;$3C
-        .byte #%01111100;$D0
+	.byte #%00010000;$40
         .byte #%11111110;$70
-        .byte #%00010000;$40
-jet_Frame1
-	.byte #%00000000;
-        .byte #%00010000;$1E
-        .byte #%00010000;$40
-        .byte #%00010000;$40
-        .byte #%00111000;$1A
+        .byte #%01111100;$D0
         .byte #%00111000;$3C
-        .byte #%00111000;$D0
-        .byte #%01111100;$70
+        .byte #%00111000;$1A
         .byte #%00010000;$40
+        .byte #%00010000;$40
+        .byte #%00010000;$1E
+
+        
+       
+        
+jet_Frame1        
+	.byte #%00000000;
+        .byte #%00010000;$40
+        .byte #%01111100;$70
+        .byte #%00111000;$D0
+        .byte #%00111000;$3C
+        .byte #%00111000;$1A
+        .byte #%00010000;$40
+        .byte #%00010000;$40
+        .byte #%00010000;$1E
+        
+        
 ;---End Graphics Data--
 
 
@@ -253,7 +316,7 @@ bomber_Frame0
 
 jet_ColorFrame0
 	.byte #$00
-        .byte #$1E;
+        .byte #$1b;
         .byte #$40;
         .byte #$40;
         .byte #$1A;
@@ -277,13 +340,13 @@ jet_ColorFrame1
 bomber_ColorFrame0
 	.byte #$00
         .byte #$1A;
-        .byte #$40;
-        .byte #$40;
-        .byte #$40;
-        .byte #$40;
-        .byte #$40;
-        .byte #$40;
-        .byte #$40;
+        .byte #$15;
+        .byte #$15;
+        .byte #$15;
+        .byte #$15;
+        .byte #$15;
+        .byte #$10;
+        .byte #$10;
 ;---End Color Data---
 
 
