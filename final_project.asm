@@ -17,6 +17,17 @@ P0Xpos .byte ; player x position
 P0ypos .byte ; player x position 
 BomberXpos .byte ;enemy x pos
 Bomberypos .byte ;enemy x pos
+jetspriteptr word ;pointer to jet sprite a word can hold 2 bytes or 16 bits which is a memory address
+jetcolourptr word
+bomberspriteptr word
+bombercolourptr word
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;DEFINE CONSTANTS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+JET_HEIGHT = 9 ;player zero height
+BOMBER_HEIGHT = 9 ;Bomber zero height
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Start our ROM code segment starting at $F000.
@@ -40,10 +51,42 @@ Reset:
         sta P0Xpos
         lda #10
         sta P0ypos
-        lda #0
+        lda #54
         sta BomberXpos
-        lda #0
+        lda #83
         sta Bomberypos
+        
+        ;initialise sprite pointer in ram low and high byte
+       
+        lda #<jet_Frame0; sprite low byte
+        sta jetspriteptr
+        lda #>jet_Frame0; sprite high byte
+        sta jetspriteptr+1
+        
+        ;colour 
+        lda #<jet_ColorFrame0; colour low byte
+        sta jetcolourptr
+        lda #>jet_ColorFrame0; colour high byte
+        sta jetcolourptr+1
+        
+        
+        ;bomber
+        
+        lda #<bomber_Frame0; low byte
+        sta bomberspriteptr
+        lda #>bomber_Frame0;#>jet_Frame1; high byte
+        sta bomberspriteptr+1
+        
+        ; colour
+        
+        lda #<bomber_ColorFrame0; colour low byte
+        sta bombercolourptr
+        lda #>bomber_ColorFrame0; colour high byte
+        sta bombercolourptr+1
+        
+        
+        
+        
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; start main game loop
