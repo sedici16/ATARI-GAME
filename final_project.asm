@@ -137,12 +137,60 @@ StartFrame:
         
 ;loop for the visible scan lines
 
-	ldx #192
-visiblelines:
-	sta WSYNC
-        dex 
-        bne visiblelines
-    
+	ldx #91
+        
+.visiblelines:
+
+	txa ;tranfer x to a
+        sec; set the carry for subtraction 
+        sbc P0ypos ; subtract player position from scan lines.
+        cmp JET_HEIGHT; are we inside the sprite height 
+        bcc .drawsprite0
+        lda #0; else load zero
+        
+.drawsprite0:
+	tay; transfer a to y, a has the differrence 9,8,7,6 and so on
+	lda (jetspriteptr),y; load playyer bitmap slice 
+        sta WSYNC; wait for the scanline
+        
+	sta GRP0; store the graphic in player GRP0
+;load the colour code for the player
+;store the colour in COLUP0
+	
+        lda jetcolourptr,y       ; player 0 color light red
+    	sta COLUP0; store the colours in player 1
+
+;	sta WSYNC ;wait for scan line
+;        dex; decrement scan line
+;        bne visiblelines; repeat for next scan line until finished
+        
+        
+;;;draw the bomber sprite
+
+	txa ;tranfer x to a
+        sec; set the carry for subtraction 
+        sbc Bomberypos ; subtract player position from scan lines.
+        cmp BOMBER_HEIGHT; are we inside the sprite height 
+        bcc .drawbomber0
+        lda #0; else load zero
+
+.drawbomber0:
+	tay; transfer a to y, a has the differrence 9,8,7,6 and so on
+	lda (bomberspriteptr),y; load playyer bitmap slice 
+        sta WSYNC; wait for the scanline
+        
+	sta GRP1; store the graphic in player GRP0
+;load the colour code for the player
+;store the colour in COLUP0
+	
+        lda bombercolourptr,y       ; player 0 color light red
+    	sta COLUP1; store the colours in player 1
+
+        
+        dex; decrement scan line
+        bne .visiblelines; repeat for next scan line until finished
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
