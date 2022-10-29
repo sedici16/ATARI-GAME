@@ -13,10 +13,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     seg.u Variables
     org $80
-P0Xpos .byte ; player x position 
-P0ypos .byte ; player x position 
-BomberXpos .byte ;enemy x pos
-Bomberypos .byte ;enemy x pos
+P0Xpos byte ; player x position 
+P0ypos byte ; player x position 
+BomberXpos byte ;enemy x pos
+Bomberypos byte ;enemy x pos
 jetspriteptr word ;pointer to jet sprite a word can hold 2 bytes or 16 bits which is a memory address
 jetcolourptr word
 bomberspriteptr word
@@ -47,7 +47,7 @@ Reset:
 ;; initialise ram variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	lda #79
+	lda #10
         sta P0Xpos
         lda #10
         sta P0ypos
@@ -101,6 +101,7 @@ StartFrame:
     lda P0Xpos ;set player x pos
     ldy #0; load object 1
     jsr SetObjectSubRoutine;call subroutine
+
     lda BomberXpos
     ldy #1
     jsr SetObjectSubRoutine
@@ -146,14 +147,14 @@ StartFrame:
         lda #%1111000; solid line for the playfield zero
         sta PF0
         
-        lda #0 ;no line
+        lda #%0 ;no line
         sta PF1
         lda #0
         sta PF2
         
 ;loop for the visible scan lines
 
-	ldx #91;  I have 2 wsync in the sprite rendering so half of the lines
+	ldx #96;  I have 2 wsync in the sprite rendering so half of the lines
         
 .visiblelines:
 
@@ -173,14 +174,10 @@ StartFrame:
 	;load the colour code for the player
 	;store the colour in COLUP0
         
-         sta WSYNC; wait for the scanline
+        sta WSYNC; wait for the scanline
 	
         lda jetcolourptr,y       ; player 0 color light red
     	sta COLUP0; store the colours in player 1
-
-;	sta WSYNC ;wait for scan line
-;        dex; decrement scan line
-;        bne visiblelines; repeat for next scan line until finished
         
         
 ;;;draw the bomber sprite
@@ -250,12 +247,14 @@ CheckP0left:
         bit SWCHA
         bne CheckP0right
         dec P0Xpos
+        
 
 CheckP0right:
 	lda #%10000000 ;joystick down
         bit SWCHA
         bne noaction
         inc P0Xpos
+        
         
 noaction:
     
@@ -268,9 +267,9 @@ noaction:
 SetObjectSubRoutine subroutine
 	sta WSYNC
         sec
-DivideLoop:
+.DivideLoop:
 	sbc #15 ;subtract 15 from accumulator 
-        bcs DivideLoop; loop while carry flag is still set
+        bcs .DivideLoop; loop while carry flag is still set
         ;the accumulator will contain the remainder of the division
         
         eor #%00000111 ; this is 7; xor the result to obtain a value between -8 and 7
@@ -284,12 +283,7 @@ DivideLoop:
         sta RESP0,y; reset 15 brute posinition Y is the object type 0 player, 1 Bomber
         rts
 
-        
-
-
-
-
-
+       
     
 ;---Graphics Data for the jet sprite ---
 
