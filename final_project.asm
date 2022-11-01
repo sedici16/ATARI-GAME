@@ -280,6 +280,24 @@ CheckP0right:
         
         
 noaction:
+
+; move the sprite
+
+Updatebomber_pos:
+
+	lda Bomberypos
+	clc
+        cmp #5
+        bmi .startfromtop;branch if minus 
+        dec Bomberypos
+        jmp .end_position_update
+        
+.startfromtop:
+	lda #96
+        sta Bomberypos
+
+.end_position_update
+
     
     jmp StartFrame
     
