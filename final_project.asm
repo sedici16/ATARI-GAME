@@ -21,6 +21,7 @@ jetspriteptr word ;pointer to jet sprite a word can hold 2 bytes or 16 bits whic
 jetcolourptr word
 bomberspriteptr word
 bombercolourptr word
+jetoffsetanimation byte ;player zero to change the sprite animation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;DEFINE CONSTANTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -38,22 +39,19 @@ BOMBER_HEIGHT = 9 ;Bomber zero height
 Reset:
     CLEAN_START    ; macro to clean memory and TIA
 
-    ldx #$85    ; blue background color
-    stx COLUBK
-    ldx #$c2
-    stx COLUPF
+ 
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; initialise ram variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	lda #10
+	lda #60
         sta P0Xpos
         lda #10
         sta P0ypos
         lda #40
         sta BomberXpos
-        lda #83
+        lda #54
         sta Bomberypos
         
         ;initialise sprite pointer in ram low and high byte
@@ -106,8 +104,8 @@ StartFrame:
     ldy #1
     jsr SetObjectSubRoutine
     
-    lda WSYNC
-    lda HMOVE
+    sta WSYNC
+    sta HMOVE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;vblank
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,6 +139,12 @@ StartFrame:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;set the playfield
 
+   	ldx #$85    ; blue background color
+    	stx COLUBK
+    	
+        ldx #$c2; PLAYFIELD color
+    	stx COLUPF
+
     	LDX #%0000001 ;this set the platfield to reflect the pattern
     	STX CTRLPF
 	
@@ -166,6 +170,15 @@ StartFrame:
         lda #0; else load zero
         
 .drawsprite0:
+
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;off set animation for going left or right, add the height to the sprite
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	clc ; clear carry for addition
+        adc jetoffsetanimation; jump to the correct frame in memory
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        
 	tay; transfer a to y, a has the differrence 9,8,7,6 and so on
 	lda (jetspriteptr),y; load playyer bitmap slice 
         
@@ -176,7 +189,7 @@ StartFrame:
         
         sta WSYNC; wait for the scanline
 	
-        lda jetcolourptr,y       ; player 0 color light red
+        lda jetcolourptr,Y       ; player 0 color light red
     	sta COLUP0; store the colours in player 1
         
         
@@ -190,12 +203,11 @@ StartFrame:
         lda #0; else load zero
 
 .drawbomber0:
+
 	tay; transfer a to y, a has the differrence 9,8,7,6 and so on
 	
         lda #%000000101;double the width of the sprite
         sta NUSIZ1
-        
-        
         
         lda (bomberspriteptr),y; load playyer bitmap slice 
 
@@ -211,6 +223,9 @@ StartFrame:
         
         dex; decrement scan line
         bne .visiblelines; repeat for next scan line until finished
+        
+        lda #0
+        sta jetoffsetanimation
 
 
 
@@ -234,6 +249,8 @@ CheckP0up:
         bit SWCHA
         bne CheckP0down; if the pattern does not match bypass
         inc P0ypos
+        lda #0 ; no frame change for going up or down
+        sta jetoffsetanimation
 
 CheckP0down:
 
@@ -241,12 +258,16 @@ CheckP0down:
         bit SWCHA
         bne CheckP0left
         dec P0ypos
+        lda #0 ; no frame change for going up or down
+        sta jetoffsetanimation
 
 CheckP0left:
 	lda #%01000000 ;joystick left
         bit SWCHA
         bne CheckP0right
         dec P0Xpos
+        lda JET_HEIGHT  ; it is 9
+        sta jetoffsetanimation
         
 
 CheckP0right:
@@ -254,6 +275,8 @@ CheckP0right:
         bit SWCHA
         bne noaction
         inc P0Xpos
+        lda JET_HEIGHT  ; it is 9
+        sta jetoffsetanimation
         
         
 noaction:
@@ -272,15 +295,15 @@ SetObjectSubRoutine subroutine
         bcs .DivideLoop; loop while carry flag is still set
         ;the accumulator will contain the remainder of the division
         
-        eor #%00000111 ; this is 7; xor the result to obtain a value between -8 and 7
+        eor #7 ; this is 7; xor the result to obtain a value between -8 and 7
         
         asl
         asl 
         asl 
         asl ;bit shift as HMP0 use only four bits
         
-        sta HMP0,y ; set fine positioning Y is the object type 0 player, 1 Bomber
-        sta RESP0,y; reset 15 brute posinition Y is the object type 0 player, 1 Bomber
+        sta HMP0,Y ; set fine positioning Y is the object type 0 player, 1 Bomber
+        sta RESP0,Y; reset 15 brute posinition Y is the object type 0 player, 1 Bomber
         rts
 
        
@@ -291,7 +314,7 @@ SetObjectSubRoutine subroutine
         
 jet_Frame0
 	.byte #%00000000;
-	.byte #%00010000;$40
+	.byte #%00101000;$40
         .byte #%11111110;$70
         .byte #%01111100;$D0
         .byte #%00111000;$3C
@@ -299,8 +322,6 @@ jet_Frame0
         .byte #%00010000;$40
         .byte #%00010000;$40
         .byte #%00010000;$1E
-
-        
        
         
 jet_Frame1        
@@ -309,13 +330,10 @@ jet_Frame1
         .byte #%01111100;$70
         .byte #%00111000;$D0
         .byte #%00111000;$3C
-        .byte #%00111000;$1A
+        .byte #%00010000;$1A
         .byte #%00010000;$40
         .byte #%00010000;$40
         .byte #%00010000;$1E
-        
-        
-;---End Graphics Data--
 
 
 ;---Graphics Data for the bomber--
@@ -333,31 +351,29 @@ bomber_Frame0
 ;---End Graphics Data---
 
 
-
-
 ;---Color Data from PlayerPal 2600---
 
 jet_ColorFrame0
-	.byte #$00
-        .byte #$1b;
-        .byte #$40;
-        .byte #$40;
-        .byte #$1A;
-        .byte #$3C;
-        .byte #$D0;
-        .byte #$70;
-        .byte #$40;
+        .byte #$00
+        .byte #$FE
+        .byte #$0C
+        .byte #$0E
+        .byte #$0E
+        .byte #$04
+        .byte #$BA
+        .byte #$0E
+        .byte #$08
+        
 jet_ColorFrame1
-	.byte #$00
-        .byte #$1E;
-        .byte #$40;
-        .byte #$40;
-        .byte #$1A;
-        .byte #$3C;
-        .byte #$D0;
-        .byte #$70;
-        .byte #$40;
-;---End Color Data---
+        .byte #$00
+        .byte #$FE
+        .byte #$0C
+        .byte #$0E
+        .byte #$0E
+        .byte #$04
+        .byte #$BA
+        .byte #$0E
+        .byte #$08
 
 
 bomber_ColorFrame0
@@ -371,10 +387,6 @@ bomber_ColorFrame0
         .byte #$10;
         .byte #$10;
 ;---End Color Data---
-
-
-
-
 
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
