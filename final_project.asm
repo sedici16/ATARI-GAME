@@ -55,7 +55,7 @@ Reset:
         lda #54
         sta Bomberypos
         
-        lda #%11010100
+        lda #%11010100; initialise the random number
         sta Random
         
         ;initialise sprite pointer in ram low and high byte
@@ -346,16 +346,24 @@ bomber_random_num subroutine
         asl
         rol Random
         
-        lsr ;2 right shift are equal to divide by 4
-        lsr
+        
+        
+;        lsr ;2 right shift are equal to divide by 4
+;        lsr
         
         sta BomberXpos
-        lda #30
+        
+        lda #20
+        
         adc BomberXpos ; off set for the grass
+        
         sta BomberXpos
         
         lda #96
         sta Bomberypos
+        
+        rts
+        
         
 ;---Graphics Data for the jet sprite ---
 
