@@ -189,7 +189,7 @@ StartFrame:
         
         sta WSYNC; wait for the scanline
 	
-        lda jetcolourptr,Y       ; player 0 color light red
+        lda (jetcolourptr),Y       ; player 0 color light red
     	sta COLUP0; store the colours in player 1
         
         
@@ -217,7 +217,7 @@ StartFrame:
 	;store the colour in COLUP0
         sta WSYNC; wait for the scanline
 	
-        lda bombercolourptr,y       ; player 0 color light red
+        lda (bombercolourptr),y       ; player 0 color light red
     	sta COLUP1; store the colours in player 1
 
         
