@@ -22,6 +22,7 @@ jetcolourptr word
 bomberspriteptr word
 bombercolourptr word
 jetoffsetanimation byte ;player zero to change the sprite animation
+Random byte ;the random number
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;DEFINE CONSTANTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -53,6 +54,9 @@ Reset:
         sta BomberXpos
         lda #54
         sta Bomberypos
+        
+        lda #%11010100
+        sta Random
         
         ;initialise sprite pointer in ram low and high byte
        
@@ -293,8 +297,9 @@ Updatebomber_pos:
         jmp .end_position_update
         
 .startfromtop:
-	lda #96
-        sta Bomberypos
+;	lda #96
+;        sta Bomberypos
+	jsr bomber_random_num; jump to random number generator
 
 .end_position_update
 
@@ -324,8 +329,34 @@ SetObjectSubRoutine subroutine
         sta RESP0,Y; reset 15 brute posinition Y is the object type 0 player, 1 Bomber
         rts
 
-       
-    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;generate a linear feedback shift Register random number
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+bomber_random_num subroutine    
+
+	lda Random ;load random 
+        asl ;left bit shift
+        eor Random ; xor random 
+        asl 
+    	eor Random
+        asl
+        asl
+        eor Random
+        asl
+        rol Random
+        
+        lsr ;2 right shift are equal to divide by 4
+        lsr
+        
+        sta BomberXpos
+        lda #30
+        adc BomberXpos ; off set for the grass
+        sta BomberXpos
+        
+        lda #96
+        sta Bomberypos
+        
 ;---Graphics Data for the jet sprite ---
 
 
