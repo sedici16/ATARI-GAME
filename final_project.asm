@@ -141,7 +141,29 @@ StartFrame:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;render the 192 visible lines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;set the playfield
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;space for the score board
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;        
+        lda #0 ;set all values to zero to have an empty space
+        sta PF0
+        sta PF1
+        sta PF0
+        sta GRP0
+        sta GRP1
+        sta COLUPF
+
+	REPEAT 20
+        
+        sta WSYNC
+
+        REPEND 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;variables for the playfield and colours
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
    	ldx #$85    ; blue background color
     	stx COLUBK
@@ -152,17 +174,22 @@ StartFrame:
     	LDX #%0000001 ;this set the platfield to reflect the pattern
     	STX CTRLPF
 	
-        lda #%1111000; solid line for the playfield zero
+        lda #%11111111; solid line for the playfield zero
         sta PF0
         
-        lda #%0 ;no line
+        lda #%11110000;no line
         sta PF1
         lda #0
         sta PF2
         
-;loop for the visible scan lines
+        
 
-	ldx #96;  I have 2 wsync in the sprite rendering so half of the lines
+        
+        
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;loop for the visible scan lines
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	ldx #86;  I have 2 wsync in the sprite rendering so half of the lines
         
 .visiblelines:
 
@@ -348,12 +375,12 @@ bomber_random_num subroutine
         
         
         
-;        lsr ;2 right shift are equal to divide by 4
-;        lsr
+        lsr ;2 right shift are equal to divide by 4
+        lsr
         
         sta BomberXpos
         
-        lda #20
+        lda #30
         
         adc BomberXpos ; off set for the grass
         
