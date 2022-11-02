@@ -330,6 +330,33 @@ Updatebomber_pos:
 
 .end_position_update
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;check for collision
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.collision_bomber_player0:
+	lda #%10000000 ;CXPPMM detects the collision between player0 and player1
+        bit CXPPMM; test the bit player0 and player1
+        bne collision_detected ;if collision happens jump to collision dectected, if it is not zero repeat
+        jmp .check_collision_PF_P0; if there is no collision
+        
+.check_collision_PF_P0:
+	lda #%10000000 
+        bit CXP0FB; test the bit for player and playfield
+        bne collision_PF_P0
+        jmp end_collision_check
+
+collision_PF_P0:
+	jsr gameover
+
+
+collision_detected:
+	jsr gameover
+        
+end_collision_check:
+	sta CXCLR ;clear the collision flags before thenext frame
+
     
     jmp StartFrame
     
@@ -390,6 +417,16 @@ bomber_random_num subroutine
         sta Bomberypos
         
         rts
+        
+        
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;gameover subroutine
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;      
+gameover subroutine
+	lda #$30
+        sta COLUBK
+
+	rts
         
         
 ;---Graphics Data for the jet sprite ---
