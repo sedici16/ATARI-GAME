@@ -17,6 +17,11 @@ P0Xpos byte ; player x position
 P0ypos byte ; player x position 
 BomberXpos byte ;enemy x pos
 Bomberypos byte ;enemy x pos
+score byte; 2 digit variable for the score stored as bcd
+timer byte ; 2 digit variable for the timer as bcd
+temp byte; store temporary values 
+unit_score word; needed for the calculation of the units in the score
+decimal_score word; needed for the calculation of the decimals in the score
 jetspriteptr word ;pointer to jet sprite a word can hold 2 bytes or 16 bits which is a memory address
 jetcolourptr word
 bomberspriteptr word
@@ -29,6 +34,7 @@ Random byte ;the random number
 
 JET_HEIGHT = 9 ;player zero height
 BOMBER_HEIGHT = 9 ;Bomber zero height
+DIGIT_HEIGT = 5; scoreboard height
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,6 +60,10 @@ Reset:
         sta BomberXpos
         lda #54
         sta Bomberypos
+        
+        lda #0 ;initialise the score and timer with zero
+        sta score
+        sta timer
         
         lda #%11010100; initialise the random number
         sta Random
@@ -108,6 +118,8 @@ StartFrame:
     ldy #1
     jsr SetObjectSubRoutine
     
+    jsr calculate_digit_offset
+    
     sta WSYNC
     sta HMOVE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -149,9 +161,14 @@ StartFrame:
         sta PF0
         sta PF1
         sta PF0
-        sta GRP0
+        sta GRP0 ;set value to zero for the player graphics
         sta GRP1
+        
+        lda #$1c ;load a colour for the score board
         sta COLUPF
+        
+        lda #%00000000
+        sta CTRLPF ; do not refelct the playfield 
 
 	REPEAT 20
         
@@ -419,6 +436,33 @@ bomber_random_num subroutine
         rts
         
         
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;digit display subroutine.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+calculate_digit_offset subroutine
+	
+        
+        ldx #1 ; loop counter 
+.prepare_score_loop ; this will loop tiwce 1 for the score 2 for the timer.
+	
+        lda score,x; load the accumulator with TIMER score+1
+        and #%00001111 ; to mask the decimals
+        sta temp ; save the variable to a temporary variable
+        
+        dex
+        bpl .prepare_score_loop  ; while x greater or equal than 0
+        
+        
+        
+        
+        
+        
+        
+        rts
+        
+        
+        
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;gameover subroutine
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;      
@@ -427,7 +471,107 @@ gameover subroutine
         sta COLUBK
 
 	rts
-        
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Declare ROM lookup tables
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Digits:
+    .byte %01110111          ; ### ###
+    .byte %01010101          ; # # # #
+    .byte %01010101          ; # # # #
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+
+    .byte %01110111          ; ### ###
+    .byte %00010001          ;   #   #
+    .byte %01110111          ; ### ###
+    .byte %01000100          ; #   #
+    .byte %01110111          ; ### ###
+
+    .byte %01110111          ; ### ###
+    .byte %00010001          ;   #   #
+    .byte %00110011          ;  ##  ##
+    .byte %00010001          ;   #   #
+    .byte %01110111          ; ### ###
+
+    .byte %01010101          ; # # # #
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+
+    .byte %01110111          ; ### ###
+    .byte %01000100          ; #   #
+    .byte %01110111          ; ### ###
+    .byte %00010001          ;   #   #
+    .byte %01110111          ; ### ###
+
+    .byte %01110111          ; ### ###
+    .byte %01000100          ; #   #
+    .byte %01110111          ; ### ###
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+
+    .byte %01110111          ; ### ###
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+    .byte %00010001          ;   #   #
+
+    .byte %01110111          ; ### ###
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+
+    .byte %01110111          ; ### ###
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+    .byte %00010001          ;   #   #
+    .byte %01110111          ; ### ###
+
+    .byte %00100010          ;  #   #
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+    .byte %01010101          ; # # # #
+    .byte %01010101          ; # # # #
+
+    .byte %01110111          ; ### ###
+    .byte %01010101          ; # # # #
+    .byte %01100110          ; ##  ##
+    .byte %01010101          ; # # # #
+    .byte %01110111          ; ### ###
+
+    .byte %01110111          ; ### ###
+    .byte %01000100          ; #   #
+    .byte %01000100          ; #   #
+    .byte %01000100          ; #   #
+    .byte %01110111          ; ### ###
+
+    .byte %01100110          ; ##  ##
+    .byte %01010101          ; # # # #
+    .byte %01010101          ; # # # #
+    .byte %01010101          ; # # # #
+    .byte %01100110          ; ##  ##
+
+    .byte %01110111          ; ### ###
+    .byte %01000100          ; #   #
+    .byte %01110111          ; ### ###
+    .byte %01000100          ; #   #
+    .byte %01110111          ; ### ###
+
+    .byte %01110111          ; ### ###
+    .byte %01000100          ; #   #
+    .byte %01100110          ; ##  ##
+    .byte %01000100          ; #   #
+    .byte %01000100          ; #   #
+
         
 ;---Graphics Data for the jet sprite ---
 
