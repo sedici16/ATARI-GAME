@@ -21,20 +21,22 @@ score byte; 2 digit variable for the score stored as bcd
 timer byte ; 2 digit variable for the timer as bcd
 temp byte; store temporary values 
 unit_score word; needed for the calculation of the units in the score
-decimal_score word; needed for the calculation of the decimals in the score
+tens_score word; needed for the calculation of the decimals in the score
 jetspriteptr word ;pointer to jet sprite a word can hold 2 bytes or 16 bits which is a memory address
 jetcolourptr word
 bomberspriteptr word
 bombercolourptr word
 jetoffsetanimation byte ;player zero to change the sprite animation
 Random byte ;the random number
+score_sprite byte; store the score sprite
+timer_sprite byte; store the timer sprite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;DEFINE CONSTANTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 JET_HEIGHT = 9 ;player zero height
 BOMBER_HEIGHT = 9 ;Bomber zero height
-DIGIT_HEIGT = 5; scoreboard height
+DIGIT_HEIGTH = 5; scoreboard height
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -170,11 +172,30 @@ StartFrame:
         lda #%00000000
         sta CTRLPF ; do not refelct the playfield 
 
-	REPEAT 20
+; loop for the display 
+
+	ldx DIGIT_HEIGTH
+.score_digit_loop:
+;;;;;;;;;the tens sprite display
+	ldy tens_score
+        lda Digits,y
+        and #%00001111
+        lda score_sprite
+;;;;;;;;;the units sprite display
+        ldy unit_score
+        lda Digits,y
+        and #%11110000
+        ora score_sprite
+        sta score_sprite
         
         sta WSYNC
+        sta PF1
+        
+        
+	dex 
+        bne .score_digit_loop
 
-        REPEND 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;variables for the playfield and colours
@@ -437,21 +458,40 @@ bomber_random_num subroutine
         
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;digit display subroutine.
+;digit display subroutine. this transform the score or the timer into 
+; the diplay digits
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 calculate_digit_offset subroutine
 	
+        ; these are the units
         
         ldx #1 ; loop counter 
 .prepare_score_loop ; this will loop tiwce 1 for the score 2 for the timer.
 	
-        lda score,x; load the accumulator with TIMER score+1
+        lda score,x; load the accumulator with TIMER score+1, timer is next in memory after score
         and #%00001111 ; to mask the decimals
         sta temp ; save the variable to a temporary variable
+        asl; shift left euqal of multiplication X2
+        asl ;multiplication X2
+        adc temp ;add the value saved in temp. N*2*2+n
+        sta unit_score,x ; save A in the unit score, 1 for SCORE or +1 for timer
         
-        dex
-        bpl .prepare_score_loop  ; while x greater or equal than 0
+        ; these are the tens tens_score
+        
+        lda score,x
+        and #%11110000
+        lsr ; divide by 2
+        lsr ; divide by 2 for a total of 4
+        sta temp
+        lsr
+        lsr ; total divide by 16
+        adc temp; Formula is n/16*5 = N/2/2 + N/2/2/2/2
+        sta tens_score,x
+        
+        dex ; decrement x
+        
+        bpl .prepare_score_loop  ; while x greater or equal than 0 end of loop
         
         
         
